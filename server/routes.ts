@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProjectSchema, configurationSchema } from "@shared/schema";
+import { generateAllAIAnalysis, generateAWSTemplateAI, generateGCPTemplateAI, generateAzureTemplateAI, generateArchitectureAnalysis, generateRecommendations } from "./ai-service";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -82,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate infrastructure templates
+  // Generate AI-powered infrastructure templates
   app.post("/api/projects/:id/templates", async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
@@ -92,33 +93,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Project not found" });
       }
 
-      // Simulate template generation delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const config = project.configuration as any;
+      console.log(`Generating AI templates for project ${projectId}: ${project.name}`);
+
+      // Generate AI-powered templates
+      const [awsTemplate, gcpTemplate, azureTemplate] = await Promise.all([
+        generateAWSTemplateAI(project, config),
+        generateGCPTemplateAI(project, config),
+        generateAzureTemplateAI(project, config),
+      ]);
 
       const templates = {
         aws: {
           name: "AWS CloudFormation",
-          code: generateAWSTemplate(project),
-          estimatedCost: 247,
-          provider: "aws"
+          code: awsTemplate.templateCode,
+          estimatedCost: awsTemplate.estimatedCost,
+          provider: "aws",
+          reasoning: awsTemplate.reasoning,
+          optimizations: awsTemplate.optimizations,
+          securityConsiderations: awsTemplate.securityConsiderations,
+          scalabilityFeatures: awsTemplate.scalabilityFeatures,
         },
         gcp: {
           name: "Google Cloud Deployment Manager",
-          code: generateGCPTemplate(project),
-          estimatedCost: 198,
-          provider: "gcp"
+          code: gcpTemplate.templateCode,
+          estimatedCost: gcpTemplate.estimatedCost,
+          provider: "gcp",
+          reasoning: gcpTemplate.reasoning,
+          optimizations: gcpTemplate.optimizations,
+          securityConsiderations: gcpTemplate.securityConsiderations,
+          scalabilityFeatures: gcpTemplate.scalabilityFeatures,
         },
         azure: {
           name: "Azure Resource Manager",
-          code: generateAzureTemplate(project),
-          estimatedCost: 289,
-          provider: "azure"
+          code: azureTemplate.templateCode,
+          estimatedCost: azureTemplate.estimatedCost,
+          provider: "azure",
+          reasoning: azureTemplate.reasoning,
+          optimizations: azureTemplate.optimizations,
+          securityConsiderations: azureTemplate.securityConsiderations,
+          scalabilityFeatures: azureTemplate.scalabilityFeatures,
         }
       };
 
       res.json(templates);
     } catch (error) {
-      res.status(500).json({ error: "Template generation failed" });
+      console.error('AI template generation failed:', error);
+      res.status(500).json({ 
+        error: "AI template generation failed", 
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Generate AI architecture analysis
+  app.post("/api/projects/:id/architecture", async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const config = project.configuration as any;
+      console.log(`Generating AI architecture analysis for project ${projectId}: ${project.name}`);
+
+      const analysis = await generateArchitectureAnalysis(project, config);
+      res.json(analysis);
+    } catch (error) {
+      console.error('AI architecture analysis failed:', error);
+      res.status(500).json({ 
+        error: "Architecture analysis failed", 
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Generate AI recommendations
+  app.post("/api/projects/:id/recommendations", async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const config = project.configuration as any;
+      console.log(`Generating AI recommendations for project ${projectId}: ${project.name}`);
+
+      const recommendations = await generateRecommendations(project, config);
+      res.json(recommendations);
+    } catch (error) {
+      console.error('AI recommendations generation failed:', error);
+      res.status(500).json({ 
+        error: "Recommendations generation failed", 
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Generate comprehensive AI analysis (all components)
+  app.post("/api/projects/:id/ai-analysis", async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const config = project.configuration as any;
+      console.log(`Generating comprehensive AI analysis for project ${projectId}: ${project.name}`);
+
+      const analysis = await generateAllAIAnalysis(project, config);
+      res.json(analysis);
+    } catch (error) {
+      console.error('Comprehensive AI analysis failed:', error);
+      res.status(500).json({ 
+        error: "AI analysis failed", 
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import StepProgress from "@/components/step-progress";
 import ProjectInput from "@/components/project-input";
 import Configuration from "@/components/configuration";
-import Templates from "@/components/templates";
+import AITemplates from "@/components/ai-templates";
 import Deployment from "@/components/deployment";
 import { CloudUpload, User } from "lucide-react";
 import type { ProjectFormData, ConfigurationData } from "@/lib/types";
@@ -94,7 +94,7 @@ export default function Home() {
             />
           )}
           {currentStep === 3 && (
-            <Templates
+            <AITemplates
               onNext={nextStep}
               onBack={prevStep}
               projectId={projectId!}
