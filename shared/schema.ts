@@ -56,17 +56,35 @@ export const architectureAnalysisSchema = z.object({
     name: z.string(),
     type: z.string(),
     purpose: z.string(),
-    connections: z.array(z.string()),
+    connections: z.array(z.object({
+      target: z.string(),
+      protocol: z.string(),
+      port: z.string(),
+      security: z.string(),
+    })),
+    securityControls: z.array(z.string()).optional(),
   })),
   dataFlow: z.array(z.object({
     from: z.string(),
     to: z.string(),
     type: z.string(),
+    protocol: z.string(),
+    port: z.string(),
     description: z.string(),
+    security: z.string(),
   })),
   scalingStrategy: z.string(),
-  bottlenecks: z.array(z.string()),
-  recommendations: z.array(z.string()),
+  bottlenecks: z.array(z.object({
+    name: z.string(),
+    reason: z.string(),
+    mitigation: z.string(),
+  })),
+  recommendations: z.array(z.object({
+    title: z.string(),
+    rationale: z.string(),
+    implementation: z.string(),
+    impact: z.string(),
+  })),
 });
 
 export const recommendationsSchema = z.object({
@@ -75,19 +93,66 @@ export const recommendationsSchema = z.object({
     description: z.string(),
     impact: z.enum(["high", "medium", "low"]),
     effort: z.enum(["high", "medium", "low"]),
+    implementation: z.string(),
   })),
   security: z.array(z.object({
     title: z.string(),
     description: z.string(),
     severity: z.enum(["critical", "high", "medium", "low"]),
     implementation: z.string(),
+    protection: z.string(),
   })),
   cost: z.array(z.object({
     title: z.string(),
     description: z.string(),
     savings: z.string(),
     tradeoffs: z.string(),
+    breakdown: z.string(),
   })),
+  cloudFeatures: z.object({
+    AWS: z.object({
+      securityFeatures: z.array(z.object({
+        name: z.string(),
+        what: z.string(),
+        how: z.string(),
+        why: z.string(),
+      })),
+      scalabilityFeatures: z.array(z.object({
+        name: z.string(),
+        what: z.string(),
+        how: z.string(),
+        why: z.string(),
+      })),
+    }),
+    GCP: z.object({
+      securityFeatures: z.array(z.object({
+        name: z.string(),
+        what: z.string(),
+        how: z.string(),
+        why: z.string(),
+      })),
+      scalabilityFeatures: z.array(z.object({
+        name: z.string(),
+        what: z.string(),
+        how: z.string(),
+        why: z.string(),
+      })),
+    }),
+    Azure: z.object({
+      securityFeatures: z.array(z.object({
+        name: z.string(),
+        what: z.string(),
+        how: z.string(),
+        why: z.string(),
+      })),
+      scalabilityFeatures: z.array(z.object({
+        name: z.string(),
+        what: z.string(),
+        how: z.string(),
+        why: z.string(),
+      })),
+    }),
+  }),
 });
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;

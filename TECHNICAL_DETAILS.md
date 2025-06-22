@@ -12,7 +12,7 @@ This application uses **zero external AI APIs or LLM calls**. Everything is trad
 4. **Simulated Delay**: 2-second setTimeout to mimic "AI processing"
 
 ```javascript
-// From server/routes.ts - No AI involved
+// From server/routes.ts
 const templates = {
   aws: {
     name: "AWS CloudFormation", 
@@ -42,6 +42,5 @@ shared/schema.ts         # TypeScript types
 - Express.js for HTTP server
 - React for frontend
 - Multer for file uploads
-- No AI services, no cloud SDKs, no external APIs
 
 This is a realistic demo that looks sophisticated but uses traditional programming techniques throughout.

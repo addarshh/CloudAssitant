@@ -420,16 +420,29 @@ export default function AITemplates({ onNext, onBack, projectId }: AITemplatesPr
                     <div className="bg-amber-50 rounded-xl p-6 border border-amber-200">
                       <h4 className="font-semibold text-amber-900 mb-3">Potential Bottlenecks</h4>
                       <ul className="space-y-2">
-                        {architecture.bottlenecks.map((bottleneck, index) => (
-                          <li key={index} className="text-amber-800 text-sm">• {bottleneck}</li>
+                        {(architecture.bottlenecks as { name: string; reason: string; mitigation: string }[]).map(({ name, reason, mitigation }, index) => (
+                          <li key={index} className="text-amber-800 text-sm">
+                            <span className="font-bold">{name}:</span> {reason}
+                            {mitigation && (
+                              <span className="block text-xs text-amber-700 ml-4">Mitigation: {mitigation}</span>
+                            )}
+                          </li>
                         ))}
                       </ul>
                     </div>
                     <div className="bg-green-50 rounded-xl p-6 border border-green-200">
                       <h4 className="font-semibold text-green-900 mb-3">Architecture Recommendations</h4>
                       <ul className="space-y-2">
-                        {architecture.recommendations.map((rec, index) => (
-                          <li key={index} className="text-green-800 text-sm">• {rec}</li>
+                        {(architecture.recommendations as { title: string; rationale: string; implementation?: string; impact?: string }[]).map(({ title, rationale, implementation, impact }, index) => (
+                          <li key={index} className="text-green-800 text-sm">
+                            <span className="font-bold">{title}:</span> {rationale}
+                            {implementation && (
+                              <span className="block text-xs text-green-700 ml-4">Implementation: {implementation}</span>
+                            )}
+                            {impact && (
+                              <span className="block text-xs text-green-700 ml-4">Impact: {impact}</span>
+                            )}
+                          </li>
                         ))}
                       </ul>
                     </div>

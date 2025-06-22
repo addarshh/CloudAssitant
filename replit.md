@@ -114,7 +114,7 @@ Changelog:
   - Built 4-step wizard: Project Input → Configuration → Templates → Deployment
   - Added realistic infrastructure templates for AWS, GCP, Azure
   - Implemented mock deployment with real-time progress tracking
-  - Uses zero external APIs or LLM calls - pure traditional programming
+  - Uses external APIs or LLM calls
 ```
 
 ## User Preferences
@@ -123,5 +123,5 @@ Changelog:
 Preferred communication style: Simple, everyday language.
 Technical approach: Keep current solution unchanged - user likes the implementation
 Local deployment: User wants to run this locally
-Implementation: No AI/LLM calls - uses static templates and traditional programming
+Implementation: AI/LLM calls - uses dynamic templates and traditional programming
 ```

@@ -1,6 +1,6 @@
 import type { Project, Configuration, AITemplate, ArchitectureAnalysis, Recommendations } from "@shared/schema";
 
-const LLM_ENDPOINT = "http://44.239.116.245:80/completions";
+const LLM_ENDPOINT = "http://ec2-52-90-46-106.compute-1.amazonaws.com/v1/chat/completions";
 
 interface LLMRequest {
   prompt: string;
@@ -24,20 +24,25 @@ async function callLLM(prompt: string, maxTokens: number = 1000, temperature: nu
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        prompt,
+        model: "meta-llama/Llama-4-Scout-17B-16E"
+        messages: [
+          { "role": "system", "content": "You are a helpful assistant." },
+          { "role": "user", "content": prompt }
+        ],
         max_tokens: maxTokens,
         temperature,
-      } as LLMRequest),
+      }),
     });
 
     if (!response.ok) {
       throw new Error(`LLM API error: ${response.status} ${response.statusText}`);
     }
 
-    const data: LLMResponse = await response.json();
-    
-    // Handle different response formats
-    if (data.choices && data.choices.length > 0) {
+    const data = await response.json();
+    // Extract the assistant's reply from the response
+    if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
+      return data.choices[0].message.content.trim();
+    } else if (data.choices && data.choices.length > 0 && data.choices[0].text) {
       return data.choices[0].text.trim();
     } else if (data.text) {
       return data.text.trim();
@@ -258,16 +263,25 @@ Format the response as JSON with these fields:
 export async function generateArchitectureAnalysis(project: Project, config?: Configuration): Promise<ArchitectureAnalysis> {
   const context = buildProjectContext(project, config);
   
-  const prompt = `Analyze the architecture for the following project and provide a comprehensive breakdown:
+  const prompt = `Analyze the architecture for the following project and provide a comprehensive, highly detailed breakdown:
 
 ${context}
 
 Provide a detailed architecture analysis including:
-1. List all major components (load balancer, application servers, database, cache, etc.)
-2. Describe data flow between components
-3. Identify scaling strategy
-4. Point out potential bottlenecks
-5. Provide architectural recommendations
+1. List ALL major and minor system components (e.g., load balancer, application servers, database, cache, monitoring, logging, security appliances, CDN, etc.). For each, include:
+   - Name
+   - Type (e.g., Network, Compute, Storage, Security, Monitoring, etc.)
+   - Purpose (what it does)
+   - Connections (all other components it interacts with, with protocols and ports)
+   - Security controls (e.g., firewalls, IAM, encryption)
+2. Describe the data flow between components as a step-by-step sequence, including protocols, ports, and security checks at each step.
+3. Describe the scaling strategy in detail, including triggers, thresholds, automation, and fallback mechanisms.
+4. Identify potential bottlenecks, explain why they are bottlenecks, and suggest mitigation strategies for each.
+5. Provide at least 5 architectural recommendations, each with:
+   - Title
+   - Rationale (why it matters)
+   - Implementation steps
+   - Expected impact
 
 Format the response as JSON:
 {
@@ -276,7 +290,10 @@ Format the response as JSON:
       "name": "component_name",
       "type": "component_type",
       "purpose": "what_it_does",
-      "connections": ["connected_to1", "connected_to2"]
+      "connections": [
+        { "target": "connected_to", "protocol": "protocol", "port": "port", "security": "security_control" }
+      ],
+      "securityControls": ["control1", "control2"]
     }
   ],
   "dataFlow": [
@@ -284,15 +301,27 @@ Format the response as JSON:
       "from": "source_component",
       "to": "destination_component", 
       "type": "data_type",
-      "description": "flow_description"
+      "protocol": "protocol",
+      "port": "port",
+      "description": "flow_description",
+      "security": "security_check"
     }
   ],
-  "scalingStrategy": "overall_scaling_approach",
-  "bottlenecks": ["potential_bottleneck1", "potential_bottleneck2"],
-  "recommendations": ["recommendation1", "recommendation2"]
+  "scalingStrategy": "detailed_scaling_approach",
+  "bottlenecks": [
+    { "name": "bottleneck_name", "reason": "why", "mitigation": "how_to_mitigate" }
+  ],
+  "recommendations": [
+    {
+      "title": "recommendation_title",
+      "rationale": "why_this_is_important",
+      "implementation": "how_to_implement",
+      "impact": "expected_impact"
+    }
+  ]
 }`;
 
-  const response = await callLLM(prompt, 1500, 0.4);
+  const response = await callLLM(prompt, 2000, 0.4);
   
   try {
     const parsed = JSON.parse(response);
@@ -310,7 +339,8 @@ Format the response as JSON:
           name: "Load Balancer",
           type: "Network",
           purpose: "Distribute incoming traffic",
-          connections: ["Application Servers"]
+          connections: [{ target: "Application Servers", protocol: "HTTP/HTTPS", port: "80/443", security: "WAF" }],
+          securityControls: ["WAF", "TLS"]
         }
       ],
       dataFlow: [
@@ -318,12 +348,22 @@ Format the response as JSON:
           from: "Load Balancer",
           to: "Application Servers",
           type: "HTTP/HTTPS",
-          description: "Routes user requests to healthy instances"
+          protocol: "HTTP/HTTPS",
+          port: "80/443",
+          description: "Routes user requests to healthy instances",
+          security: "WAF, TLS"
         }
       ],
-      scalingStrategy: "AI-analyzed horizontal scaling approach",
-      bottlenecks: ["Database connections", "Network bandwidth"],
-      recommendations: ["Implement caching", "Database read replicas"],
+      scalingStrategy: "AI-analyzed horizontal scaling approach with auto-scaling triggers and fallback",
+      bottlenecks: [{ name: "Database connections", reason: "Limited connection pool", mitigation: "Use read replicas and connection pooling" }],
+      recommendations: [
+        {
+          title: "Implement Caching",
+          rationale: "Reduce database load and improve response time",
+          implementation: "Add Redis or Memcached as a caching layer",
+          impact: "High performance improvement"
+        }
+      ],
     };
   }
 }
@@ -332,14 +372,20 @@ Format the response as JSON:
 export async function generateRecommendations(project: Project, config?: Configuration): Promise<Recommendations> {
   const context = buildProjectContext(project, config);
   
-  const prompt = `Generate comprehensive optimization recommendations for the following project:
+  const prompt = `Generate comprehensive, highly detailed optimization recommendations for the following project:
 
 ${context}
 
 Provide detailed recommendations in three categories:
-1. Performance optimizations (with impact and effort levels)
-2. Security improvements (with severity levels and implementation details)
-3. Cost optimization opportunities (with savings estimates and tradeoffs)
+1. Performance optimizations (with impact and effort levels, and a step-by-step implementation plan for each)
+2. Security improvements (for each, include: title, why it's important, severity, implementation steps, and how it protects the system)
+3. Cost optimization opportunities (with savings estimates, tradeoffs, and a breakdown of what is saved)
+
+Additionally, for each cloud provider (AWS, GCP, Azure), list and describe all security features and scalability features used in the architecture. For each feature, include:
+- Name
+- What it is
+- How it works
+- Why it matters for this project
 
 Format the response as JSON:
 {
@@ -348,7 +394,8 @@ Format the response as JSON:
       "title": "recommendation_title",
       "description": "detailed_description",
       "impact": "high|medium|low",
-      "effort": "high|medium|low"
+      "effort": "high|medium|low",
+      "implementation": "step_by_step_plan"
     }
   ],
   "security": [
@@ -356,7 +403,8 @@ Format the response as JSON:
       "title": "security_improvement",
       "description": "why_its_important",
       "severity": "critical|high|medium|low",
-      "implementation": "how_to_implement"
+      "implementation": "how_to_implement",
+      "protection": "how_it_protects_the_system"
     }
   ],
   "cost": [
@@ -364,12 +412,25 @@ Format the response as JSON:
       "title": "cost_optimization",
       "description": "what_it_saves",
       "savings": "estimated_savings",
-      "tradeoffs": "what_you_give_up"
+      "tradeoffs": "what_you_give_up",
+      "breakdown": "detailed_breakdown"
     }
-  ]
+  ],
+  "cloudFeatures": {
+    "AWS": {
+      "securityFeatures": [
+        { "name": "feature_name", "what": "what_it_is", "how": "how_it_works", "why": "why_it_matters" }
+      ],
+      "scalabilityFeatures": [
+        { "name": "feature_name", "what": "what_it_is", "how": "how_it_works", "why": "why_it_matters" }
+      ]
+    },
+    "GCP": { ... },
+    "Azure": { ... }
+  }
 }`;
 
-  const response = await callLLM(prompt, 1500, 0.5);
+  const response = await callLLM(prompt, 2000, 0.5);
   
   try {
     const parsed = JSON.parse(response);
@@ -377,6 +438,7 @@ Format the response as JSON:
       performance: parsed.performance || [],
       security: parsed.security || [],
       cost: parsed.cost || [],
+      cloudFeatures: parsed.cloudFeatures || {},
     };
   } catch (error) {
     return {
@@ -385,7 +447,8 @@ Format the response as JSON:
           title: "Implement Caching",
           description: "Add Redis caching layer for frequently accessed data",
           impact: "high",
-          effort: "medium"
+          effort: "medium",
+          implementation: "Deploy Redis, update app logic to use cache"
         }
       ],
       security: [
@@ -393,7 +456,8 @@ Format the response as JSON:
           title: "Enable WAF",
           description: "Web Application Firewall to protect against common attacks",
           severity: "high",
-          implementation: "Configure AWS WAF rules"
+          implementation: "Configure AWS WAF rules",
+          protection: "Blocks malicious traffic before it reaches the app"
         }
       ],
       cost: [
@@ -401,9 +465,22 @@ Format the response as JSON:
           title: "Reserved Instances",
           description: "Use reserved instances for predictable workloads",
           savings: "30-50% on compute costs",
-          tradeoffs: "Upfront commitment required"
+          tradeoffs: "Upfront commitment required",
+          breakdown: "Compute: 40%, Storage: 10%"
         }
       ],
+      cloudFeatures: {
+        AWS: {
+          securityFeatures: [
+            { name: "WAF", what: "Web Application Firewall", how: "Filters and monitors HTTP traffic", why: "Protects against common web exploits" }
+          ],
+          scalabilityFeatures: [
+            { name: "Auto Scaling", what: "Automatic resource scaling", how: "Adjusts compute resources based on load", why: "Ensures performance under varying traffic" }
+          ]
+        },
+        GCP: { securityFeatures: [], scalabilityFeatures: [] },
+        Azure: { securityFeatures: [], scalabilityFeatures: [] }
+      }
     };
   }
 }
