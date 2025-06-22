@@ -35,6 +35,23 @@
 └── uploads/                    # File upload storage (runtime)
 ```
 
+## Demo Screenshots
+![alt text](/assets/screenshots/image%20(9).png)
+
+![alt text](/assets/screenshots/image%20(10).png)
+
+![alt text](/assets/screenshots/image%20(11).png)
+
+![alt text](/assets/screenshots/image%20(12).png)
+
+![alt text](/assets/screenshots/image%20(13).png)
+
+![alt text](/assets/screenshots/image%20(14).png)
+
+![alt text](/assets/screenshots/image%20(15).png)
+
+
+
 ## Data Flow Architecture
 
 ### Type System Implementation
